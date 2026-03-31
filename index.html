@@ -1,0 +1,835 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Weather Intelligence · Global Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #111214;
+  --surface: #1a1c1f;
+  --surface2: #222428;
+  --surface3: #2a2d32;
+  --border: rgba(255,255,255,0.07);
+  --text: #f0f0f2;
+  --text2: #8a8f99;
+  --text3: #555a63;
+  --accent: #5bc4fa;
+  --accent-soft: rgba(91,196,250,0.12);
+  --green: #4ade80;
+  --green-soft: rgba(74,222,128,0.12);
+  --orange: #fb923c;
+  --orange-soft: rgba(251,146,60,0.12);
+  --red: #f87171;
+  --red-soft: rgba(248,113,113,0.12);
+  --yellow: #fbbf24;
+  --radius: 14px;
+  --radius-sm: 8px;
+}
+
+:root.light {
+  --bg: #f0f2f5;
+  --surface: #ffffff;
+  --surface2: #e8eaed;
+  --surface3: #d8dce2;
+  --border: rgba(0,0,0,0.08);
+  --text: #111214;
+  --text2: #4a5260;
+  --text3: #8a9099;
+  --accent: #0ea5d6;
+  --accent-soft: rgba(14,165,214,0.10);
+  --green: #16a34a;
+  --orange: #ea6c1a;
+  --red: #dc2626;
+  --yellow: #d97706;
+}
+
+*, *::before, *::after { transition: background-color 0.25s ease, border-color 0.25s ease, color 0.15s ease; }
+
+body {
+  background: var(--bg);
+  font-family: 'DM Sans', 'Inter', sans-serif;
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ─── LAYOUT ─── */
+.app { display: grid; grid-template-rows: 56px 1fr; height: 100vh; }
+
+/* ─── TOPBAR ─── */
+.topbar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 24px; border-bottom: 1px solid var(--border);
+  background: var(--bg);
+  position: sticky; top: 0; z-index: 100;
+}
+.topbar-left { display: flex; align-items: center; gap: 20px; }
+.app-icon { width: 28px; height: 28px; background: var(--accent); border-radius: 7px; display: flex; align-items: center; justify-content: center; font-size: 14px; }
+.location-pill {
+  display: flex; align-items: center; gap: 6px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 20px; padding: 5px 14px; cursor: pointer;
+  font-size: 13px; color: var(--text2); transition: border-color 0.2s;
+}
+.location-pill:hover { border-color: rgba(255,255,255,0.15); }
+.location-pill .dot { width: 6px; height: 6px; background: var(--green); border-radius: 50%; }
+.search-bar {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 20px; padding: 6px 16px; width: 220px;
+  font-size: 13px; color: var(--text3);
+}
+.topbar-right { display: flex; align-items: center; gap: 10px; }
+.tab-group { display: flex; gap: 2px; background: var(--surface); border-radius: 20px; padding: 3px; }
+.tab {
+  padding: 5px 14px; border-radius: 16px; font-size: 12px; font-weight: 500;
+  cursor: pointer; color: var(--text2); transition: all 0.2s;
+}
+.tab.active { background: var(--accent); color: #000; }
+.icon-btn {
+  width: 32px; height: 32px; border-radius: 8px; background: var(--surface);
+  border: 1px solid var(--border); display: flex; align-items: center; justify-content: center;
+  cursor: pointer; font-size: 14px; color: var(--text2);
+}
+
+/* ─── MAIN CONTENT ─── */
+.main { display: grid; grid-template-columns: 340px 1fr 280px; height: calc(100vh - 56px); overflow: hidden; }
+
+/* ─── LEFT PANEL ─── */
+.left-panel { border-right: 1px solid var(--border); overflow-y: auto; padding: 20px 16px; display: flex; flex-direction: column; gap: 12px; }
+.left-panel::-webkit-scrollbar { width: 4px; }
+.left-panel::-webkit-scrollbar-track { background: transparent; }
+.left-panel::-webkit-scrollbar-thumb { background: var(--surface3); border-radius: 2px; }
+
+/* Current weather card */
+.current-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  position: relative;
+  overflow: hidden;
+  display: flex !important;
+  flex-direction: column;
+  flex-shrink: 0;
+}
+.current-card::before {
+  content: '';
+  position: absolute; top: -40px; right: -40px;
+  width: 140px; height: 140px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(91,196,250,0.08) 0%, transparent 70%);
+  pointer-events: none;
+}
+.current-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; }
+.current-city { font-size: 17px; font-weight: 600; }
+.current-country { font-size: 12px; color: var(--text2); margin-top: 2px; }
+.current-time { font-size: 11px; color: var(--text3); text-align: right; font-variant-numeric: tabular-nums; }
+.current-temp-row { display: flex; align-items: flex-end; gap: 12px; margin-bottom: 14px; }
+.current-temp { font-size: 52px; font-weight: 300; line-height: 1; letter-spacing: -2px; }
+.current-temp sup { font-size: 22px; font-weight: 400; vertical-align: top; margin-top: 8px; }
+.current-condition-block { padding-bottom: 4px; }
+.current-condition { font-size: 13px; color: var(--text2); margin-bottom: 4px; }
+.feels-like { font-size: 12px; color: var(--text3); }
+
+.current-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.stat-chip {
+  background: var(--surface2); border-radius: var(--radius-sm);
+  padding: 10px 12px; display: flex; flex-direction: column; gap: 3px;
+}
+.stat-chip .lbl { font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.5px; }
+.stat-chip .val { font-size: 15px; font-weight: 500; }
+
+/* Section label */
+.section-label { font-size: 11px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: 1px; padding: 4px 4px 0; }
+
+/* City list */
+.city-list { display: flex; flex-direction: column; gap: 4px; }
+.city-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 12px; border-radius: var(--radius-sm);
+  cursor: pointer; transition: background 0.15s;
+  border: 1px solid transparent;
+}
+.city-row:hover { background: var(--surface); border-color: var(--border); }
+.city-row.active { background: var(--surface); border-color: rgba(91,196,250,0.3); }
+.city-row-left { display: flex; align-items: center; gap: 10px; }
+.city-cond-icon { font-size: 18px; width: 28px; text-align: center; }
+.city-name-block .name { font-size: 13px; font-weight: 500; }
+.city-name-block .cond { font-size: 11px; color: var(--text3); margin-top: 1px; }
+.city-row-right { text-align: right; }
+.city-row-right .temp { font-size: 17px; font-weight: 500; }
+.city-row-right .country { font-size: 10px; color: var(--text3); margin-top: 1px; }
+
+/* ─── CENTER PANEL ─── */
+.center-panel { overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 16px; }
+.center-panel::-webkit-scrollbar { width: 4px; }
+.center-panel::-webkit-scrollbar-thumb { background: var(--surface3); border-radius: 2px; }
+
+/* Tabs row */
+.view-tabs { display: flex; gap: 4px; }
+.view-tab {
+  padding: 6px 16px; border-radius: 20px; font-size: 12px; font-weight: 500;
+  cursor: pointer; color: var(--text2); border: 1px solid transparent;
+  transition: all 0.2s;
+}
+.view-tab.active { background: var(--accent-soft); color: var(--accent); border-color: rgba(91,196,250,0.25); }
+.view-tab:hover:not(.active) { background: var(--surface); border-color: var(--border); }
+
+/* Metrics grid */
+.metrics-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+.metric-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px;
+}
+.metric-card .m-label { font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+.metric-card .m-value { font-size: 24px; font-weight: 500; line-height: 1; margin-bottom: 4px; }
+.metric-card .m-sub { font-size: 11px; color: var(--text3); }
+.metric-card .m-bar { height: 3px; background: var(--surface3); border-radius: 2px; margin-top: 10px; overflow: hidden; }
+.metric-card .m-bar-fill { height: 100%; border-radius: 2px; transition: width 0.6s ease; }
+
+/* Chart card */
+.chart-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 18px;
+}
+.chart-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+.chart-title { font-size: 13px; font-weight: 600; }
+.chart-legend { display: flex; gap: 14px; }
+.legend-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--text3); }
+.legend-dot { width: 6px; height: 6px; border-radius: 50%; }
+
+/* SVG chart */
+.chart-wrap { position: relative; }
+.chart-y-labels { position: absolute; left: 0; top: 0; bottom: 20px; display: flex; flex-direction: column; justify-content: space-between; }
+.chart-y-labels span { font-size: 10px; color: var(--text3); font-variant-numeric: tabular-nums; }
+
+/* Global map grid */
+.map-section { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; }
+.map-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+.map-title { font-size: 13px; font-weight: 600; }
+.map-dot-grid {
+  position: relative; width: 100%; background: var(--surface2); border-radius: 10px; overflow: hidden;
+}
+.map-dot-grid svg { display: block; width: 100%; height: auto; }
+.map-dot-grid .map-bg-img {
+  transition: filter 0.3s ease;
+}
+:root:not(.light) .map-dot-grid .map-bg-img {
+  filter: invert(1) brightness(0.65) opacity(0.5);
+}
+:root.light .map-dot-grid .map-bg-img {
+  filter: opacity(0.4) brightness(0.9);
+}
+.map-dot-grid circle { cursor: pointer; transition: r 0.15s ease; }
+.map-dot-grid circle:hover { r: 4; }
+.map-dot-grid .dot-tooltip {
+  position: absolute;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 5px; padding: 3px 7px; font-size: 9px; white-space: nowrap;
+  pointer-events: none; opacity: 0; transition: opacity 0.15s;
+  z-index: 20;
+}
+
+
+/* AQ table */
+.aq-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.aq-table th { text-align: left; color: var(--text3); font-weight: 500; font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; padding: 0 0 10px; }
+.aq-table td { padding: 8px 0; border-top: 1px solid var(--border); }
+.aq-table tr:first-child td { border-top: none; }
+.aq-pill {
+  display: inline-block; padding: 2px 8px; border-radius: 10px;
+  font-size: 10px; font-weight: 600;
+}
+
+/* ─── RIGHT PANEL ─── */
+.right-panel { border-left: 1px solid var(--border); overflow-y: auto; padding: 20px 16px; display: flex; flex-direction: column; gap: 14px; }
+.right-panel::-webkit-scrollbar { width: 4px; }
+.right-panel::-webkit-scrollbar-thumb { background: var(--surface3); border-radius: 2px; }
+
+.rain-chart-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; }
+.rain-chart-header { display: flex; justify-content: space-between; margin-bottom: 14px; }
+.rain-chart-title { font-size: 13px; font-weight: 600; }
+.rain-bars { display: flex; align-items: flex-end; gap: 6px; height: 90px; }
+.rain-bar-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 5px; }
+.rain-bar-track { flex: 1; width: 100%; background: var(--surface2); border-radius: 4px; display: flex; align-items: flex-end; overflow: hidden; }
+.rain-bar-fill { width: 100%; border-radius: 4px; transition: height 0.6s ease; }
+.rain-bar-time { font-size: 9px; color: var(--text3); }
+
+/* Sun timeline */
+.sun-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; }
+.sun-arc-wrap { position: relative; padding: 12px 0; }
+.sun-arc-svg { width: 100%; }
+.sun-times { display: flex; justify-content: space-between; margin-top: 6px; }
+.sun-time-block { text-align: center; }
+.sun-time-block .label { font-size: 10px; color: var(--text3); }
+.sun-time-block .time { font-size: 13px; font-weight: 500; margin-top: 2px; }
+
+/* Moon card */
+.moon-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; display: flex; gap: 14px; align-items: center; }
+.moon-visual { width: 52px; height: 52px; border-radius: 50%; background: var(--surface2); display: flex; align-items: center; justify-content: center; font-size: 26px; flex-shrink: 0; border: 1px solid var(--border); }
+.moon-info .phase { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+.moon-info .illum { font-size: 11px; color: var(--text3); }
+.moon-illum-bar { margin-top: 8px; height: 3px; background: var(--surface3); border-radius: 2px; overflow: hidden; }
+.moon-illum-fill { height: 100%; background: linear-gradient(90deg, var(--accent), #c4a8ff); border-radius: 2px; }
+
+/* Ag advisory card */
+.advisory-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; }
+.advisory-title { font-size: 13px; font-weight: 600; margin-bottom: 12px; }
+.advisory-items { display: flex; flex-direction: column; gap: 8px; }
+.adv-item { display: flex; gap: 10px; align-items: flex-start; padding: 8px; background: var(--surface2); border-radius: var(--radius-sm); }
+.adv-icon { font-size: 14px; flex-shrink: 0; margin-top: 1px; }
+.adv-text { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+.adv-text .adv-title { font-size: 11px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.adv-text .adv-desc { font-size: 10px; color: var(--text3); margin-top: 2px; line-height: 1.4; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+:root.light .current-card,
+:root.light .metric-card,
+:root.light .chart-card,
+:root.light .map-section,
+:root.light .rain-chart-card,
+:root.light .sun-card,
+:root.light .moon-card,
+:root.light .advisory-card {
+  box-shadow: 0 1px 4px rgba(0,0,0,0.07), 0 4px 16px rgba(0,0,0,0.04);
+}
+:root.light .topbar {
+  box-shadow: 0 1px 0 rgba(0,0,0,0.08);
+}
+:root.light .location-pill:hover { border-color: rgba(0,0,0,0.15); }
+:root.light .tab.active { color: #fff; }
+:root.light input { color: var(--text2); }
+</style>
+</head>
+<body>
+<div class="app" id="app">
+
+  <!-- TOP BAR -->
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="app-icon">🌐</div>
+      <div class="location-pill" id="locationPill">
+        <div class="dot"></div>
+        <span id="topbarCity">New Delhi, India</span>
+      </div>
+      <div class="search-bar">
+        <span>🔍</span>
+        <input id="searchInput" placeholder="Search city..." style="background:none;border:none;outline:none;color:var(--text2);font-size:13px;width:100%" oninput="filterSearch(this.value)">
+      </div>
+    </div>
+    <div class="topbar-right">
+      <div class="tab-group">
+        <div class="tab active" onclick="switchTab('forecast',this)">Forecast</div>
+        <div class="tab" onclick="switchTab('airquality',this)">Air Quality</div>
+      </div>
+      <div class="icon-btn">⚙</div>
+      <div class="icon-btn theme-toggle" id="themeToggle" onclick="toggleTheme()" title="Toggle light/dark mode" style="width:60px;border-radius:20px;padding:0 7px;display:flex;align-items:center;justify-content:space-between;gap:3px;cursor:pointer;">
+        <span id="themeIconMoon" style="font-size:12px;transition:opacity 0.3s">🌙</span>
+        <span style="width:20px;height:11px;background:var(--surface3);border-radius:6px;position:relative;flex-shrink:0;display:inline-block;border:1px solid var(--border)">
+          <span id="themeKnob" style="position:absolute;top:1px;left:1px;width:7px;height:7px;background:var(--accent);border-radius:50%;transition:left 0.25s ease;display:block"></span>
+        </span>
+        <span id="themeIconSun" style="font-size:12px;opacity:0.4;transition:opacity 0.3s">☀️</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+
+    <!-- LEFT -->
+    <div class="left-panel">
+      <div class="current-card" id="currentCard"></div>
+      <div class="section-label">Other Cities</div>
+      <div class="city-list" id="cityList"></div>
+    </div>
+
+    <!-- CENTER -->
+    <div class="center-panel">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <div class="view-tabs">
+          <div class="view-tab active" onclick="switchView('today',this)">Today</div>
+          <div class="view-tab" onclick="switchView('week',this)">7 Days</div>
+          <div class="view-tab" onclick="switchView('global',this)">Global Map</div>
+        </div>
+        <span style="font-size:11px;color:var(--text3)">Data: 2024-05-16 · 242 Stations</span>
+      </div>
+
+      <!-- Metrics Row -->
+      <div class="metrics-grid" id="metricsGrid"></div>
+
+      <!-- Chart -->
+      <div class="chart-card" id="chartCard"></div>
+
+      <!-- AQ / Map section -->
+      <div id="extraSection"></div>
+    </div>
+
+    <!-- RIGHT -->
+    <div class="right-panel" id="rightPanel"></div>
+
+  </div>
+</div>
+
+<script src="data_v2.js"></script>
+<script>
+// ── REAL DATA from CSV ──
+// Data loaded via window.CITIES from data.js
+
+const CONDITION_ICONS = {
+  'Sunny': '☀️', 'Clear': '🌙', 'Partly cloudy': '⛅', 'Partly Cloudy': '⛅',
+  'Cloudy': '☁️', 'Overcast': '☁️', 'Mist': '🌫️', 'Fog': '🌫️',
+  'Light rain': '🌦️', 'Light drizzle': '🌦️', 'Patchy light rain': '🌦️',
+  'Moderate rain': '🌧️', 'Heavy rain': '🌧️', 'Patchy rain nearby': '🌦️',
+  'Patchy rain possible': '🌦️', 'Light rain shower': '🌦️',
+  'Thundery outbreaks possible': '⛈️', 'Patchy light rain with thunder': '⛈️',
+};
+function getIcon(cond) {
+  return CONDITION_ICONS[cond] || '🌤️';
+}
+
+const AQI_LABELS = ['','Good','Moderate','Unhealthy (SG)','Unhealthy','Very Unhealthy','Hazardous'];
+const AQI_COLORS = ['','#4ade80','#fbbf24','#fb923c','#f87171','#c084fc','#9f1239'];
+
+let selectedCity = window.CITIES[0] || {};
+let currentTab = 'forecast';
+let currentView = 'today';
+
+function switchTab(tab, el) {
+  currentTab = tab;
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  renderCenter();
+}
+function switchView(view, el) {
+  currentView = view;
+  document.querySelectorAll('.view-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  renderCenter();
+}
+
+function selectCity(city) {
+  selectedCity = city;
+  document.getElementById('topbarCity').textContent = `${city.city}, ${city.country}`;
+  renderLeft();
+  renderCenter();
+  renderRight();
+}
+
+let searchTimeout;
+function filterSearch(q) {
+  clearTimeout(searchTimeout);
+  searchTimeout = setTimeout(() => {
+    const val = q.toLowerCase();
+    const list = document.getElementById('cityList');
+    list.innerHTML = '';
+    
+    if (val.length < 2) {
+        renderCityList(window.CITIES.slice(0, 50));
+        return;
+    }
+    
+    // Performance optimization: Find top 50 matches without allocating huge arrays
+    const matches = [];
+    for (let c of window.CITIES) {
+      if (c.city && c.city.toLowerCase().startsWith(val)) {
+        matches.push(c);
+        if (matches.length >= 50) break;
+      }
+    }
+    renderCityList(matches);
+  }, 250);
+}
+
+// ── RENDER LEFT ──
+function renderLeft() {
+  // Current card
+  const c = selectedCity;
+  const heatIndex = c.temp + 0.33 * (c.humidity / 100 * 6.105 * Math.exp(17.27 * c.temp / (c.temp + 237.7))) - 4;
+  const aqiColor = AQI_COLORS[c.aqi] || '#4ade80';
+  const aqiLabel = AQI_LABELS[c.aqi] || 'Good';
+
+  document.getElementById('currentCard').innerHTML = `
+    <div class="current-header">
+      <div>
+        <div class="current-city">${c.city}</div>
+        <div class="current-country">${c.country}</div>
+      </div>
+      <div class="current-time">${c.sunrise.replace(' AM',' am').replace(' PM',' pm')}<br>↓ ${c.sunset.replace(' AM',' am').replace(' PM',' pm')}</div>
+    </div>
+    <div class="current-temp-row">
+      <div class="current-temp">${Math.round(c.temp)}<sup>°C</sup></div>
+      <div class="current-condition-block">
+        <div style="font-size:28px;margin-bottom:4px">${getIcon(c.condition)}</div>
+        <div class="current-condition">${c.condition}</div>
+        <div class="feels-like">Feels like ${c.feels.toFixed(1)}°C</div>
+      </div>
+    </div>
+    <div class="current-stats">
+      <div class="stat-chip">
+        <span class="lbl">Humidity</span>
+        <span class="val" style="color:var(--accent)">${c.humidity}%</span>
+      </div>
+      <div class="stat-chip">
+        <span class="lbl">Wind</span>
+        <span class="val">${c.wind_kph} <span style="font-size:11px;color:var(--text3)">kph ${c.wind_dir}</span></span>
+      </div>
+      <div class="stat-chip">
+        <span class="lbl">UV Index</span>
+        <span class="val" style="color:${c.uv>=8?'var(--red)':c.uv>=6?'var(--orange)':'var(--green)'}">${c.uv}</span>
+      </div>
+      <div class="stat-chip">
+        <span class="lbl">AQI</span>
+        <span class="val" style="color:${aqiColor}">${aqiLabel.split('(')[0].trim()}</span>
+      </div>
+    </div>
+  `;
+
+  // Provide initial list of 50 cities so the DOM doesn't freeze loading 127k divs
+  renderCityList(window.CITIES.slice(0, 50));
+}
+
+function renderCityList(displayCities) {
+  const list = document.getElementById('cityList');
+  list.innerHTML = '';
+  
+  displayCities.filter(c2 => c2.city !== selectedCity.city).forEach(c2 => {
+    const div = document.createElement('div');
+    div.className = 'city-row';
+    div.dataset.city = c2.city;
+    div.innerHTML = `
+      <div class="city-row-left">
+        <span class="city-cond-icon">${getIcon(c2.condition)}</span>
+        <div class="city-name-block">
+          <div class="name">${c2.city}</div>
+          <div class="cond">${c2.condition}</div>
+        </div>
+      </div>
+      <div class="city-row-right">
+        <div class="temp">${Math.round(c2.temp)}°</div>
+        <div class="country">${c2.country}</div>
+      </div>
+    `;
+    div.onclick = () => selectCity(c2);
+    list.appendChild(div);
+  });
+}
+
+// ── RENDER CENTER ──
+function renderCenter() {
+  const c = selectedCity;
+  renderMetrics(c);
+  renderChart(c);
+  renderExtra(c);
+}
+
+function renderMetrics(c) {
+  const heatIdx = Math.round(c.temp - 0.55 * (1 - c.humidity / 100) * (c.temp - 14.5));
+  const windRisk = c.wind_kph > 60 ? 'High' : c.wind_kph > 30 ? 'Moderate' : 'Low';
+  const windRiskColor = c.wind_kph > 60 ? 'var(--red)' : c.wind_kph > 30 ? 'var(--yellow)' : 'var(--green)';
+  const visColor = c.visibility < 2 ? 'var(--red)' : c.visibility < 5 ? 'var(--yellow)' : 'var(--green)';
+  const uvColor = c.uv >= 8 ? 'var(--red)' : c.uv >= 6 ? 'var(--orange)' : 'var(--green)';
+
+  document.getElementById('metricsGrid').innerHTML = `
+    <div class="metric-card">
+      <div class="m-label">Heat Index</div>
+      <div class="m-value" style="color:${heatIdx>40?'var(--red)':heatIdx>35?'var(--orange)':'var(--text)'}">${heatIdx}°C</div>
+      <div class="m-sub">Feels ${heatIdx > c.temp ? 'hotter' : 'cooler'} than actual</div>
+      <div class="m-bar"><div class="m-bar-fill" style="width:${Math.min(100,(heatIdx/50)*100)}%;background:${heatIdx>40?'var(--red)':heatIdx>35?'var(--orange)':'var(--accent)'}"></div></div>
+    </div>
+    <div class="metric-card">
+      <div class="m-label">Visibility</div>
+      <div class="m-value" style="color:${visColor}">${c.visibility} <span style="font-size:13px;color:var(--text3)">km</span></div>
+      <div class="m-sub">${c.visibility < 2 ? 'Very poor' : c.visibility < 5 ? 'Reduced' : c.visibility < 8 ? 'Moderate' : 'Clear'}</div>
+      <div class="m-bar"><div class="m-bar-fill" style="width:${Math.min(100,(c.visibility/20)*100)}%;background:${visColor}"></div></div>
+    </div>
+    <div class="metric-card">
+      <div class="m-label">UV Index</div>
+      <div class="m-value" style="color:${uvColor}">${c.uv}</div>
+      <div class="m-sub">${c.uv>=11?'Extreme':c.uv>=8?'Very High':c.uv>=6?'High':c.uv>=3?'Moderate':'Low'}</div>
+      <div class="m-bar"><div class="m-bar-fill" style="width:${Math.min(100,(c.uv/11)*100)}%;background:${uvColor}"></div></div>
+    </div>
+    <div class="metric-card">
+      <div class="m-label">Wind Risk</div>
+      <div class="m-value" style="color:${windRiskColor}">${c.gust_kph} <span style="font-size:13px;color:var(--text3)">kph</span></div>
+      <div class="m-sub">Gust · ${windRisk} risk</div>
+      <div class="m-bar"><div class="m-bar-fill" style="width:${Math.min(100,(c.gust_kph/120)*100)}%;background:${windRiskColor}"></div></div>
+    </div>
+  `;
+}
+
+function renderChart(c) {
+  // Simulate 24h temperature/humidity using real values as base
+  const baseTemp = c.temp;
+  const baseHum = c.humidity;
+  const hours = Array.from({length:24}, (_,i) => i);
+  const tempData = hours.map(h => {
+    const offset = -5 * Math.cos((h - 14) * Math.PI / 12);
+    return +(baseTemp + offset + (Math.random()-0.5)*1.5).toFixed(1);
+  });
+  const humData = hours.map(h => {
+    const offset = 10 * Math.cos((h - 14) * Math.PI / 12);
+    return Math.min(100, Math.max(10, Math.round(baseHum + offset + (Math.random()-0.5)*5)));
+  });
+
+  const minT = Math.min(...tempData) - 2;
+  const maxT = Math.max(...tempData) + 2;
+  const W = 520, H = 120;
+  const xStep = W / 23;
+
+  const tempPoints = tempData.map((t,i) => `${i*xStep},${H - ((t-minT)/(maxT-minT))*H}`).join(' ');
+  const humPoints = humData.map((h2,i) => `${i*xStep},${H - (h2/100)*H}`).join(' ');
+  const tempFill = tempData.map((t,i) => `${i*xStep},${H - ((t-minT)/(maxT-minT))*H}`).join(' ');
+
+  const showHours = [0,3,6,9,12,15,18,21,23];
+
+  document.getElementById('chartCard').innerHTML = `
+    <div class="chart-header">
+      <div class="chart-title">24-Hour Profile — ${c.city}</div>
+      <div class="chart-legend">
+        <div class="legend-item"><div class="legend-dot" style="background:var(--accent)"></div>Temperature</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div>Humidity</div>
+      </div>
+    </div>
+    <svg viewBox="-30 0 ${W+40} ${H+30}" style="width:100%;overflow:visible">
+      <defs>
+        <linearGradient id="tg" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#5bc4fa" stop-opacity="0.18"/>
+          <stop offset="100%" stop-color="#5bc4fa" stop-opacity="0"/>
+        </linearGradient>
+      </defs>
+      <!-- Grid lines -->
+      ${[0,0.25,0.5,0.75,1].map(f => `
+        <line x1="0" y1="${H*f}" x2="${W}" y2="${H*f}" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+        <text x="-5" y="${H*f+4}" text-anchor="end" font-size="9" fill="#555a63">${Math.round(maxT - f*(maxT-minT))}°</text>
+      `).join('')}
+      <!-- Temp area fill -->
+      <polygon points="${tempFill} ${W},${H} 0,${H}" fill="url(#tg)"/>
+      <!-- Temp line -->
+      <polyline points="${tempPoints}" fill="none" stroke="#5bc4fa" stroke-width="1.8" stroke-linejoin="round"/>
+      <!-- Humidity line -->
+      <polyline points="${humPoints}" fill="none" stroke="#4ade80" stroke-width="1.5" stroke-linejoin="round" stroke-dasharray="3,2"/>
+      <!-- X labels -->
+      ${showHours.map(h => `<text x="${h*xStep}" y="${H+16}" text-anchor="middle" font-size="9" fill="#555a63">${h.toString().padStart(2,'0')}h</text>`).join('')}
+    </svg>
+  `;
+}
+
+function renderExtra(c) {
+  if (currentTab === 'airquality') {
+    // Air quality table of all cities
+    const sorted = [...window.CITIES].sort((a,b) => b.pm25 - a.pm25).slice(0,12);
+    document.getElementById('extraSection').innerHTML = `
+      <div class="chart-card">
+        <div class="chart-header">
+          <div class="chart-title">Global Air Quality Comparison</div>
+          <span style="font-size:11px;color:var(--text3)">PM2.5 μg/m³ · sorted worst first</span>
+        </div>
+        <table class="aq-table">
+          <thead><tr><th>City</th><th>PM2.5</th><th>PM10</th><th>NO₂</th><th>O₃</th><th>AQI Status</th></tr></thead>
+          <tbody>
+            ${sorted.map(city => `
+              <tr>
+                <td style="font-weight:500">${city.city}<span style="color:var(--text3);font-size:10px;margin-left:5px">${city.country}</span></td>
+                <td style="font-variant-numeric:tabular-nums">${city.pm25.toFixed(1)}</td>
+                <td style="font-variant-numeric:tabular-nums">${city.pm10.toFixed(1)}</td>
+                <td style="font-variant-numeric:tabular-nums">${city.no2.toFixed(1)}</td>
+                <td style="font-variant-numeric:tabular-nums">${city.o3.toFixed(0)}</td>
+                <td><span class="aq-pill" style="background:${AQI_COLORS[city.aqi]}22;color:${AQI_COLORS[city.aqi]}">${AQI_LABELS[city.aqi]||'Good'}</span></td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    `;
+  } else if (currentView === 'global') {
+    // Build dots as SVG circles — same coordinate system as the map SVG (viewBox 0 0 360 180)
+    const dotsSvg = window.CITIES.slice(0, 300).map(city => {
+      const cx = city.lon + 180;        // 0..360
+      const cy = 90 - city.lat;         // 0..180
+      const col = city.temp > 35 ? '#f87171' : city.temp > 25 ? '#fb923c' : city.temp > 15 ? '#5bc4fa' : '#a5b4fc';
+      const safeCity = city.city.replace(/'/g, "\\'");
+      return `<circle cx="${cx}" cy="${cy}" r="2.2" fill="${col}" stroke="rgba(0,0,0,0.3)" stroke-width="0.4" onclick="selectCity(window.CITIES.find(c=>c.city==='${safeCity}'))"><title>${city.city} ${Math.round(city.temp)}°C</title></circle>`;
+    }).join('');
+
+    document.getElementById('extraSection').innerHTML = `
+      <div class="map-section">
+        <div class="map-header">
+          <div class="map-title">Global Temperature Map</div>
+          <div style="display:flex;gap:10px;font-size:10px;color:var(--text3)">
+            <span><span style="color:#a5b4fc">●</span> &lt;15°</span>
+            <span><span style="color:#5bc4fa">●</span> 15–25°</span>
+            <span><span style="color:#fb923c">●</span> 25–35°</span>
+            <span><span style="color:#f87171">●</span> &gt;35°</span>
+          </div>
+        </div>
+        <div class="map-dot-grid">
+          <svg viewBox="0 0 360 180" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+            <image class="map-bg-img" href="world-map.svg" x="0" y="0" width="360" height="180" preserveAspectRatio="none"/>
+            ${dotsSvg}
+          </svg>
+        </div>
+      </div>
+    `;
+  } else {
+    // Week forecast (simulated)
+    const days = ['Thu','Fri','Sat','Sun','Mon','Tue','Wed'];
+    const base = c.temp;
+    const cards = days.map((d,i) => {
+      const t = Math.round(base + (Math.random()-0.5)*6);
+      const lo = Math.round(t - 5 - Math.random()*3);
+      const condList = ['Sunny','Partly cloudy','Light rain','Cloudy','Overcast'];
+      const cond = condList[Math.floor(Math.random()*condList.length)];
+      return `
+        <div class="metric-card" style="text-align:center;cursor:pointer" onclick="void(0)">
+          <div class="m-label" style="text-align:center">${d}</div>
+          <div style="font-size:24px;margin:8px 0">${getIcon(cond)}</div>
+          <div style="font-size:18px;font-weight:500">${t}°</div>
+          <div style="font-size:11px;color:var(--text3);margin-top:2px">${lo}° low</div>
+          <div style="font-size:10px;color:var(--text3);margin-top:4px">${cond}</div>
+        </div>
+      `;
+    }).join('');
+    document.getElementById('extraSection').innerHTML = `
+      <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:8px">${cards}</div>
+    `;
+  }
+}
+
+// ── RENDER RIGHT ──
+function renderRight() {
+  const c = selectedCity;
+
+  // Rain bars — simulate hourly precip
+  const rainHours = ['10AM','11AM','12PM','1PM','2PM','3PM'];
+  const rainVals = [20, 35, 55, 80, 60, 40].map(v => v + (c.precip > 0 ? 15 : 0) + Math.random()*10);
+  const maxRain = Math.max(...rainVals);
+  const rainBars = rainHours.map((h,i) => {
+    const pct = (rainVals[i] / maxRain) * 100;
+    const col = pct > 70 ? 'var(--red)' : pct > 45 ? 'var(--accent)' : 'var(--surface3)';
+    return `<div class="rain-bar-wrap">
+      <div class="rain-bar-track"><div class="rain-bar-fill" style="height:${pct}%;background:${col}"></div></div>
+      <div class="rain-bar-time">${h}</div>
+    </div>`;
+  }).join('');
+
+  // Sun arc SVG
+  const [srH, srM] = c.sunrise.replace(' AM','').replace(' PM','').split(':').map(Number);
+  const [ssH, ssM] = c.sunset.replace(' AM','').replace(' PM','').split(':').map(Number);
+  const totalDay = (ssH*60+ssM) - (srH*60+srM);
+  const nowMin = 14 * 60; // simulate 2pm
+  const prog = Math.max(0, Math.min(1, (nowMin - (srH*60+srM)) / totalDay));
+  const angle = Math.PI * prog;
+  const cx = 120, cy = 70, r = 55;
+  const sx = cx - r * Math.cos(0), sy = cy - r * Math.sin(0);
+  const ex = cx + r, ey = cy;
+  const sunX = cx + r * Math.cos(Math.PI - angle);
+  const sunY = cy - r * Math.sin(angle);
+
+  // Moon phase icon
+  const moonIcons = {'New Moon':'🌑','Waxing Crescent':'🌒','First Quarter':'🌓','Waxing Gibbous':'🌔','Full Moon':'🌕','Waning Gibbous':'🌖','Last Quarter':'🌗','Waning Crescent':'🌘'};
+  const moonIcon = moonIcons[c.moon_phase] || '🌙';
+  const illumPct = parseInt(c.moon_illum) || 50;
+
+  // Ag advisory
+  const sprayOk = c.wind_kph < 15 && c.humidity > 50;
+  const irrigate = c.precip < 1 && c.humidity < 60;
+
+  document.getElementById('rightPanel').innerHTML = `
+    <!-- Rain Chart -->
+    <div class="rain-chart-card">
+      <div class="rain-chart-header">
+        <div class="rain-chart-title">Chance of Rain</div>
+        <span style="font-size:11px;color:var(--text3)">Today</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+        ${['Rainy','Moderate','Light'].map(l => `<span style="font-size:10px;color:var(--text3)">${l}</span>`).join('')}
+      </div>
+      <div class="rain-bars">${rainBars}</div>
+    </div>
+
+    <!-- Sun Timeline -->
+    <div class="sun-card">
+      <div style="font-size:13px;font-weight:600;margin-bottom:12px">☀️ Sun & Daylight</div>
+      <svg class="sun-arc-svg" viewBox="0 0 240 80" style="width:100%">
+        <path d="M ${cx-r},${cy} A ${r},${r} 0 0 1 ${cx+r},${cy}" fill="none" stroke="rgba(251,191,36,0.15)" stroke-width="2"/>
+        <circle cx="${sunX}" cy="${sunY}" r="7" fill="#fbbf24" opacity="0.9"/>
+        <circle cx="${sunX}" cy="${sunY}" r="12" fill="rgba(251,191,36,0.15)"/>
+        <text x="${cx-r}" y="${cy+14}" text-anchor="middle" font-size="9" fill="#8a8f99">Rise</text>
+        <text x="${cx+r}" y="${cy+14}" text-anchor="middle" font-size="9" fill="#8a8f99">Set</text>
+      </svg>
+      <div class="sun-times">
+        <div class="sun-time-block"><div class="label">Sunrise</div><div class="time">${c.sunrise.replace(' AM',' am').replace(' PM',' pm')}</div></div>
+        <div class="sun-time-block"><div class="label">Daylight</div><div class="time">${Math.floor(totalDay/60)}h ${totalDay%60}m</div></div>
+        <div class="sun-time-block"><div class="label">Sunset</div><div class="time">${c.sunset.replace(' AM',' am').replace(' PM',' pm')}</div></div>
+      </div>
+    </div>
+
+    <!-- Moon -->
+    <div class="moon-card">
+      <div class="moon-visual">${moonIcon}</div>
+      <div class="moon-info" style="flex:1">
+        <div class="phase">${c.moon_phase}</div>
+        <div class="illum">${illumPct}% illuminated</div>
+        <div class="moon-illum-bar"><div class="moon-illum-fill" style="width:${illumPct}%"></div></div>
+      </div>
+    </div>
+
+    <!-- Ag Advisory -->
+    <div class="advisory-card">
+      <div class="advisory-title">🌾 Kisan Advisory</div>
+      <div class="advisory-items">
+        <div class="adv-item">
+          <div class="adv-icon">${sprayOk ? '✅' : '⚠️'}</div>
+          <div class="adv-text">
+            <div class="adv-title" style="color:${sprayOk?'var(--green)':'var(--orange)'}">Spray Window: ${sprayOk?'Optimal':'Caution'}</div>
+            <div class="adv-desc">Wind ${c.wind_kph} kph · Humidity ${c.humidity}% · ${sprayOk?'Low drift risk':'High drift risk'}</div>
+          </div>
+        </div>
+        <div class="adv-item">
+          <div class="adv-icon">${irrigate ? '💧' : '🚫'}</div>
+          <div class="adv-text">
+            <div class="adv-title" style="color:${irrigate?'var(--accent)':'var(--text3)'}">Irrigation: ${irrigate?'Recommended':'Not Needed'}</div>
+            <div class="adv-desc">Precip ${c.precip}mm · Cloud ${c.cloud}% cover</div>
+          </div>
+        </div>
+        <div class="adv-item">
+          <div class="adv-icon">${c.uv >= 8 ? '🔴' : '🟡'}</div>
+          <div class="adv-text">
+            <div class="adv-title" style="color:${c.uv>=8?'var(--red)':'var(--yellow)'}">Field Work: ${c.uv>=8?'Avoid 10am–4pm':'Morning preferred'}</div>
+            <div class="adv-desc">UV Index ${c.uv} · Feels like ${c.feels}°C</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// ── THEME TOGGLE ──
+let isDark = true;
+function toggleTheme() {
+  isDark = !isDark;
+  document.documentElement.classList.toggle('light', !isDark);
+  const knob = document.getElementById('themeKnob');
+  const moon = document.getElementById('themeIconMoon');
+  const sun  = document.getElementById('themeIconSun');
+  if (!isDark) {
+    knob.style.left = '10px';
+    moon.style.opacity = '0.4';
+    sun.style.opacity  = '1';
+  } else {
+    knob.style.left = '1px';
+    moon.style.opacity = '1';
+    sun.style.opacity  = '0.4';
+  }
+}
+
+// ── INIT ──
+renderLeft();
+renderCenter();
+renderRight();
+</script>
+</body>
+</html>

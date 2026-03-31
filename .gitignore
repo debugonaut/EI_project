@@ -1,0 +1,9 @@
+node_modules/
+data.js
+tmp_mapgen/
+test.js
+test2.js
+test.json
+generate_base64_map.js
+parse_map.py
+.DS_Store
