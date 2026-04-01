@@ -308,11 +308,11 @@ body {
 .advisory-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; }
 .advisory-title { font-size: 13px; font-weight: 600; margin-bottom: 12px; }
 .advisory-items { display: flex; flex-direction: column; gap: 8px; }
-.adv-item { display: flex; gap: 10px; align-items: flex-start; padding: 8px; background: var(--surface2); border-radius: var(--radius-sm); }
-.adv-icon { font-size: 14px; flex-shrink: 0; margin-top: 1px; }
-.adv-text { display: block; flex: 1; min-width: 0; }
-.adv-text .adv-title { font-size: 11px; font-weight: 600; }
-.adv-text .adv-desc { font-size: 10px; color: var(--text3); margin-top: 2px; line-height: 1.4; }
+.hlth-item { display: flex; gap: 10px; align-items: flex-start; padding: 8px; background: var(--surface2); border-radius: var(--radius-sm); }
+.hlth-icon { font-size: 14px; flex-shrink: 0; margin-top: 1px; }
+.hlth-text { display: block; flex: 1; min-width: 0; }
+.hlth-text .hlth-title { font-size: 11px; font-weight: 600; }
+.hlth-text .hlth-desc { font-size: 10px; color: var(--text3); margin-top: 2px; line-height: 1.4; }
 
 :root.light .current-card,
 :root.light .metric-card,
@@ -968,25 +968,25 @@ function renderRight() {
     <div class="advisory-card">
       <div class="advisory-title" style="display:flex;align-items:center;gap:6px"><span class="svg-icon" style="color:var(--accent)">${SVGS.alert}</span> Health & Comfort</div>
       <div class="advisory-items">
-        <div class="adv-item">
+        <div class="hlth-item">
           <div class="kisan-svg" style="color:${c.aqi>3?'var(--red)':c.aqi>2?'var(--orange)':'var(--green)'}"><span class="svg-icon">${c.aqi>3 ? SVGS.alert : SVGS.leaf}</span></div>
-          <div class="adv-text">
-            <div class="adv-title" style="color:${c.aqi>3?'var(--red)':c.aqi>2?'var(--orange)':'var(--green)'}">Air Quality: ${AQI_LABELS[c.aqi] || 'Good'}</div>
-            <div class="adv-desc">PM2.5: ${c.pm25} · ${c.aqi>3?'Reduce outdoor exertion':'Ideal conditions for outdoors'}</div>
+          <div class="hlth-text">
+            <div class="hlth-title" style="color:${c.aqi>3?'var(--red)':c.aqi>2?'var(--orange)':'var(--green)'}">Air Quality: ${AQI_LABELS[c.aqi] || 'Good'}</div>
+            <div class="hlth-desc">PM2.5: ${c.pm25} · ${c.aqi>3?'Reduce outdoor exertion':'Ideal conditions for outdoors'}</div>
           </div>
         </div>
-        <div class="adv-item">
+        <div class="hlth-item">
           <div class="kisan-svg" style="color:${c.uv>=8?'var(--red)':'var(--yellow)'}"><span class="svg-icon">${SVGS.sun}</span></div>
-          <div class="adv-text">
-            <div class="adv-title" style="color:${c.uv>=8?'var(--red)':'var(--text)'}">UV Exposure: ${c.uv>=8?'Very High':c.uv>=5?'High':'Moderate'}</div>
-            <div class="adv-desc">Index: ${c.uv} · ${c.uv>=8?'Protection essential (Hat, SPF 50)':'Use sun protection if outside'}</div>
+          <div class="hlth-text">
+            <div class="hlth-title" style="color:${c.uv>=8?'var(--red)':'var(--text)'}">UV Exposure: ${c.uv>=8?'Very High':c.uv>=5?'High':'Moderate'}</div>
+            <div class="hlth-desc">Index: ${c.uv} · ${c.uv>=8?'Protection essential (Hat, SPF 50)':'Use sun protection if outside'}</div>
           </div>
         </div>
-        <div class="adv-item">
+        <div class="hlth-item">
           <div class="kisan-svg" style="color:${c.feels>35?'var(--orange)':c.feels<10?'#5bc4fa':'var(--green)'}"><span class="svg-icon">${SVGS.thermometer}</span></div>
-          <div class="adv-text">
-            <div class="adv-title" style="color:${c.feels>35?'var(--orange)':c.feels<10?'#5bc4fa':'var(--green)'}">Thermal Stress: ${c.feels>35?'High Heat':c.feels<10?'Cold':'Comfortable'}</div>
-            <div class="adv-desc">Feels like ${Math.round(c.feels)}°C · ${c.feels>35?'Stay hydrated':c.feels<10?'Dress warmly':'No thermal stress'}</div>
+          <div class="hlth-text">
+            <div class="hlth-title" style="color:${c.feels>35?'var(--orange)':c.feels<10?'#5bc4fa':'var(--green)'}">Thermal Stress: ${c.feels>35?'High Heat':c.feels<10?'Cold':'Comfortable'}</div>
+            <div class="hlth-desc">Feels like ${Math.round(c.feels)}°C · ${c.feels>35?'Stay hydrated':c.feels<10?'Dress warmly':'No thermal stress'}</div>
           </div>
         </div>
       </div>
