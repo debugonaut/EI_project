@@ -964,29 +964,29 @@ function renderRight() {
       </div>
     </div>
 
-    <!-- Ag Advisory -->
+    <!-- Health & Comfort Advisory -->
     <div class="advisory-card">
-      <div class="advisory-title" style="display:flex;align-items:center;gap:6px"><span class="svg-icon" style="color:var(--green)">${SVGS.leaf}</span> Kisan Advisory</div>
+      <div class="advisory-title" style="display:flex;align-items:center;gap:6px"><span class="svg-icon" style="color:var(--accent)">${SVGS.alert}</span> Health & Comfort</div>
       <div class="advisory-items">
         <div class="adv-item">
-          <div class="kisan-svg" style="color:${sprayOk?'var(--green)':'var(--orange)'}"><span class="svg-icon">${sprayOk ? SVGS.check : SVGS.alert}</span></div>
+          <div class="kisan-svg" style="color:${c.aqi>3?'var(--red)':c.aqi>2?'var(--orange)':'var(--green)'}"><span class="svg-icon">${c.aqi>3 ? SVGS.alert : SVGS.leaf}</span></div>
           <div class="adv-text">
-            <div class="adv-title" style="color:${sprayOk?'var(--green)':'var(--orange)'}">Spray Window: ${sprayOk?'Optimal':'Caution'}</div>
-            <div class="adv-desc">Wind ${c.wind_mph} mph · Humidity ${c.humidity}%</div>
-          </div>
-        </div>
-        <div class="adv-item">
-          <div class="kisan-svg" style="color:${irrigate?'var(--accent)':'var(--text3)'}"><span class="svg-icon">${irrigate ? SVGS.drop : SVGS.x}</span></div>
-          <div class="adv-text">
-            <div class="adv-title" style="color:${irrigate?'var(--accent)':'var(--text3)'}">Irrigation: ${irrigate?'Recommended':'Not Needed'}</div>
-            <div class="adv-desc">Precip ${c.precip_in.toFixed(2)}in · Cloud ${c.cloud}% cover</div>
+            <div class="adv-title" style="color:${c.aqi>3?'var(--red)':c.aqi>2?'var(--orange)':'var(--green)'}">Air Quality: ${AQI_LABELS[c.aqi] || 'Good'}</div>
+            <div class="adv-desc">PM2.5: ${c.pm25} · ${c.aqi>3?'Reduce outdoor exertion':'Ideal conditions for outdoors'}</div>
           </div>
         </div>
         <div class="adv-item">
           <div class="kisan-svg" style="color:${c.uv>=8?'var(--red)':'var(--yellow)'}"><span class="svg-icon">${SVGS.sun}</span></div>
           <div class="adv-text">
-            <div class="adv-title" style="color:${c.uv>=8?'var(--red)':'var(--yellow)'}">Field Work: ${c.uv>=8?'Avoid 10am–4pm':'Morning preferred'}</div>
-            <div class="adv-desc">UV Index ${c.uv} · Feels like ${Math.round(c.feels)}°C</div>
+            <div class="adv-title" style="color:${c.uv>=8?'var(--red)':'var(--text)'}">UV Exposure: ${c.uv>=8?'Very High':c.uv>=5?'High':'Moderate'}</div>
+            <div class="adv-desc">Index: ${c.uv} · ${c.uv>=8?'Protection essential (Hat, SPF 50)':'Use sun protection if outside'}</div>
+          </div>
+        </div>
+        <div class="adv-item">
+          <div class="kisan-svg" style="color:${c.feels>35?'var(--orange)':c.feels<10?'#5bc4fa':'var(--green)'}"><span class="svg-icon">${SVGS.thermometer}</span></div>
+          <div class="adv-text">
+            <div class="adv-title" style="color:${c.feels>35?'var(--orange)':c.feels<10?'#5bc4fa':'var(--green)'}">Thermal Stress: ${c.feels>35?'High Heat':c.feels<10?'Cold':'Comfortable'}</div>
+            <div class="adv-desc">Feels like ${Math.round(c.feels)}°C · ${c.feels>35?'Stay hydrated':c.feels<10?'Dress warmly':'No thermal stress'}</div>
           </div>
         </div>
       </div>
