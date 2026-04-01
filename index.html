@@ -310,9 +310,9 @@ body {
 .advisory-items { display: flex; flex-direction: column; gap: 8px; }
 .adv-item { display: flex; gap: 10px; align-items: flex-start; padding: 8px; background: var(--surface2); border-radius: var(--radius-sm); }
 .adv-icon { font-size: 14px; flex-shrink: 0; margin-top: 1px; }
-.adv-text { display: flex; flex-direction: column; flex: 1; min-width: 0; }
-.adv-text .adv-title { font-size: 11px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.adv-text .adv-desc { font-size: 10px; color: var(--text3); margin-top: 2px; line-height: 1.4; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.adv-text { display: block; flex: 1; min-width: 0; }
+.adv-text .adv-title { font-size: 11px; font-weight: 600; }
+.adv-text .adv-desc { font-size: 10px; color: var(--text3); margin-top: 2px; line-height: 1.4; }
 
 :root.light .current-card,
 :root.light .metric-card,
