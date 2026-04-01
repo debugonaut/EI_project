@@ -761,7 +761,22 @@ function renderExtra(c) {
       </div>
     `;
   } else if (currentView === 'global') {
-    // Scatter Plot Temp vs Humidity
+    // 1. Global Map (original)
+    const dotsSvg = window.CITIES.slice(0, 300).map(city => {
+      const cx = city.lon + 180;        // 0..360
+      const cy = 90 - city.lat;         // 0..180
+      const col = city.temp > 35 ? '#f87171' : city.temp > 25 ? '#fb923c' : city.temp > 15 ? '#5bc4fa' : '#a5b4fc';
+      const safeCity = city.city.replace(/'/g, "\'");
+      return `<circle cx="${cx}" cy="${cy}" r="2.2" class="scatter-dot" fill="${col}" stroke="rgba(0,0,0,0.3)" stroke-width="0.4" onclick="selectCity(window.CITIES.find(c=>c.city==='${safeCity}'))"><title>${city.city} ${Math.round(city.temp)}°C</title></circle>`;
+    }).join('');
+    
+    // Map Target Highlight
+    const targetMapX = c.lon + 180;
+    const targetMapY = 90 - c.lat;
+    const targetCol = c.temp > 35 ? '#f87171' : c.temp > 25 ? '#fb923c' : c.temp > 15 ? '#5bc4fa' : '#a5b4fc';
+    const mapHighlight = `<circle cx="${targetMapX}" cy="${targetMapY}" r="4" fill="none" class="scatter-dot" stroke="${targetCol}" stroke-width="1.5" />`;
+
+    // 2. Scatter Plot Temp vs Humidity
     const svgW = 600, svgH = 200;
     const scatterDots = window.CITIES.map(city => {
       const x = ((city.temp + 20) / 70) * svgW;
@@ -773,42 +788,46 @@ function renderExtra(c) {
 
     const targetX = ((c.temp + 20) / 70) * svgW;
     const targetY = svgH - (c.humidity / 100) * svgH;
-    const targetCol = c.temp > 35 ? '#f87171' : c.temp > 25 ? '#fb923c' : c.temp > 15 ? '#5bc4fa' : '#a5b4fc';
 
     document.getElementById('extraSection').innerHTML = `
-      <div class="map-section">
-        <div class="map-header">
-          <div class="map-title">Global Climate Distribution (Temp vs Humidity)</div>
-          <div style="display:flex;gap:10px;font-size:10px;color:var(--text3)">
-            <span><span style="color:#a5b4fc">●</span> &lt;15°C</span>
-            <span><span style="color:#5bc4fa">●</span> 15–25°C</span>
-            <span><span style="color:#fb923c">●</span> 25–35°C</span>
-            <span><span style="color:#f87171">●</span> &gt;35°C</span>
+      <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+        <div class="map-section" style="margin-top:0;">
+          <div class="map-header">
+            <div class="map-title">Global Temperature Map</div>
+            <div style="display:flex;gap:10px;font-size:10px;color:var(--text3)">
+              <span><span style="color:#a5b4fc">●</span> &lt;15°C</span>
+              <span><span style="color:#5bc4fa">●</span> 15–25°C</span>
+              <span><span style="color:#fb923c">●</span> 25–35°C</span>
+              <span><span style="color:#f87171">●</span> &gt;35°C</span>
+            </div>
+          </div>
+          <div class="map-dot-grid" style="background:var(--surface)">
+            <svg viewBox="0 0 360 180" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;aspect-ratio:2/1">
+              <image class="map-bg-img" href="world-map.svg" x="0" y="0" width="360" height="180" preserveAspectRatio="none"/>
+              ${dotsSvg}
+              ${mapHighlight}
+            </svg>
           </div>
         </div>
-        <div class="map-dot-grid" style="padding:15px; padding-bottom:20px; background:var(--surface)">
-          <svg viewBox="-25 -10 ${svgW+50} ${svgH+30}" style="width:100%; height: auto; overflow:visible;">
-            <!-- Grid -->
-            <line x1="0" y1="${svgH/2}" x2="${svgW}" y2="${svgH/2}" stroke="var(--border)" stroke-dasharray="3 3"/>
-            <line x1="${svgW/2}" y1="0" x2="${svgW/2}" y2="${svgH}" stroke="var(--border)" stroke-dasharray="3 3"/>
-            
-            <!-- Axes -->
-            <line x1="0" y1="${svgH}" x2="${svgW}" y2="${svgH}" stroke="var(--text3)" stroke-width="1.5"/>
-            <line x1="0" y1="0" x2="0" y2="${svgH}" stroke="var(--text3)" stroke-width="1.5"/>
-            
-            <text x="0" y="${svgH+15}" font-size="10" fill="var(--text3)">-20°C</text>
-            <text x="${svgW/2}" y="${svgH+15}" font-size="10" text-anchor="middle" fill="var(--text3)">15°C</text>
-            <text x="${svgW}" y="${svgH+15}" font-size="10" text-anchor="end" fill="var(--text3)">50°C</text>
-            <text x="${svgW/2}" y="${svgH+28}" font-size="10" text-anchor="middle" fill="var(--text2)">Temperature</text>
-            
-            <text x="-10" y="${svgH}" font-size="10" text-anchor="end" fill="var(--text3)">0%</text>
-            <text x="-10" y="5" font-size="10" text-anchor="end" fill="var(--text3)">100%</text>
-            <text x="-30" y="${svgH/2}" font-size="10" transform="rotate(-90 -30 ${svgH/2})" text-anchor="middle" fill="var(--text2)">Humidity</text>
-            
-            ${scatterDots}
-            <circle cx="${targetX}" cy="${targetY}" r="6" fill="none" stroke="${targetCol}" stroke-width="2" class="scatter-dot"/>
-            <text x="${targetX}" y="${targetY - 10}" font-size="10" text-anchor="middle" fill="var(--text)">${c.city}</text>
-          </svg>
+        <div class="map-section" style="margin-top:0;">
+          <div class="map-header">
+            <div class="map-title">Climate Dist (Temp vs Hum)</div>
+          </div>
+          <div class="map-dot-grid" style="padding:15px; padding-bottom:20px; background:var(--surface); display:flex; align-items:center; aspect-ratio:2/1">
+            <svg viewBox="-25 -10 ${svgW+50} ${svgH+30}" style="width:100%; height: auto; overflow:visible;">
+              <line x1="0" y1="${svgH/2}" x2="${svgW}" y2="${svgH/2}" stroke="var(--border)" stroke-dasharray="3 3"/>
+              <line x1="${svgW/2}" y1="0" x2="${svgW/2}" y2="${svgH}" stroke="var(--border)" stroke-dasharray="3 3"/>
+              <line x1="0" y1="${svgH}" x2="${svgW}" y2="${svgH}" stroke="var(--text3)" stroke-width="1.5"/>
+              <line x1="0" y1="0" x2="0" y2="${svgH}" stroke="var(--text3)" stroke-width="1.5"/>
+              <text x="0" y="${svgH+15}" font-size="10" fill="var(--text3)">-20°C</text>
+              <text x="${svgW/2}" y="${svgH+15}" font-size="10" text-anchor="middle" fill="var(--text3)">15°C</text>
+              <text x="${svgW}" y="${svgH+15}" font-size="10" text-anchor="end" fill="var(--text3)">50°C</text>
+              <text x="-10" y="${svgH}" font-size="10" text-anchor="end" fill="var(--text3)">0%</text>
+              <text x="-10" y="5" font-size="10" text-anchor="end" fill="var(--text3)">100%</text>
+              ${scatterDots}
+              <circle cx="${targetX}" cy="${targetY}" r="5" fill="none" stroke="${targetCol}" stroke-width="2" class="scatter-dot"/>
+            </svg>
+          </div>
         </div>
       </div>
     `;
