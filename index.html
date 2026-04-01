@@ -1014,9 +1014,9 @@ function toggleTheme() {
 }
 
 // ── INIT ──
-renderLeft();
-renderCenter();
-renderRight();
+if (window.CITIES && window.CITIES.length > 0) {
+  selectCity(window.CITIES[0]);
+}
 </script>
 </body>
 </html>
