@@ -384,7 +384,7 @@ body {
           <div class="view-tab" onclick="switchView('week',this)">7 Days</div>
           <div class="view-tab" onclick="switchView('global',this)">Global Map</div>
         </div>
-        <span style="font-size:11px;color:var(--text3)">Data: 2024-05-16 · 242 Stations</span>
+        <span id="dataDateLabel" style="font-size:11px;color:var(--text3)"></span>
       </div>
 
       <!-- Metrics Row -->
@@ -1178,6 +1178,18 @@ function toggleTheme() {
 
 // ── INIT ──
 if (window.CITIES && window.CITIES.length > 0) {
+  const latestDateStr = window.CITIES.reduce((latest, c) => {
+    if (!c.last_updated) return latest;
+    // Extract date part (e.g., '2023-08-30 08:00' -> '2023-08-30')
+    const d = c.last_updated.split(' ')[0];
+    return d > latest ? d : latest;
+  }, '');
+  const latestDate = latestDateStr || new Date().toISOString().split('T')[0];
+  const stationCount = window.CITIES.length;
+  
+  const el = document.getElementById('dataDateLabel');
+  if (el) el.textContent = `Data: ${latestDate} · ${stationCount} Stations`;
+
   selectCity(window.CITIES[0]);
 }
 </script>
