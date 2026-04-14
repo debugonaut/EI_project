@@ -352,6 +352,8 @@ body {
       <div class="tab-group">
         <div class="tab active" onclick="switchTab('forecast',this)">Forecast</div>
         <div class="tab" onclick="switchTab('airquality',this)">Air Quality</div>
+        <div class="tab" onclick="switchTab('lifestyle',this)">Lifestyle</div>
+        <div class="tab" onclick="switchTab('env',this)">Environment</div>
       </div>
       <div class="icon-btn">⚙</div>
       <div class="icon-btn theme-toggle" id="themeToggle" onclick="toggleTheme()" title="Toggle light/dark mode" style="width:60px;border-radius:20px;padding:0 7px;display:flex;align-items:center;justify-content:space-between;gap:3px;cursor:pointer;">
@@ -408,6 +410,15 @@ body {
 
 
 const SVGS = {
+  run: `<svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>`,
+  bike: `<svg viewBox="0 0 24 24"><circle cx="5.5" cy="17.5" r="3.5"></circle><circle cx="18.5" cy="17.5" r="3.5"></circle><path d="M15 6L11 11L14.5 13L18.5 7"></path><path d="M5.5 14L8.5 7H13"></path></svg>`,
+  star: `<svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>`,
+  camera: `<svg viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>`,
+  solar: `<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>`,
+  wind_turb: `<svg viewBox="0 0 24 24"><path d="M12 2v20M12 12l8.5-4.5M12 12L3.5 7.5"></path><circle cx="12" cy="12" r="2"></circle></svg>`,
+  pollen: `<svg viewBox="0 0 24 24"><path d="M11 21A10 10 0 0 1 2 11c0-4.3 3.6-7.8 8-8.6a8 8 0 0 1 12 11.2c-2.4 4.5-7.3 7.4-12 7.4z"></path><path d="M21 21L11 11"></path></svg>`,
+  fire: `<svg viewBox="0 0 24 24"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"></path></svg>`,
+
   sun: `<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>`,
   moon: `<svg viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>`,
   cloud: `<svg viewBox="0 0 24 24"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"></path></svg>`,
@@ -440,6 +451,52 @@ function getIcon(cond) {
 
 const AQI_LABELS = ['','Good','Moderate','Unhealthy (SG)','Unhealthy','Very Unhealthy','Hazardous'];
 const AQI_COLORS = ['','#4ade80','#fbbf24','#fb923c','#f87171','#c084fc','#9f1239'];
+
+// ── DERIVED DATA ENGINE ──
+function calcActivityScores(c) {
+  const runTemp = 1 - Math.min(1, Math.abs(c.temp - 15) / 20);
+  const runHum = c.humidity < 70 ? 1 : Math.max(0, 1 - (c.humidity - 70) / 30);
+  const runWind = c.wind_kph < 15 ? 1 : Math.max(0, 1 - (c.wind_kph - 15) / 25);
+  const runAQI = c.aqi <= 2 ? 1 : c.aqi <= 3 ? 0.6 : 0.2;
+  const running = Math.round((runTemp * 0.35 + runHum * 0.2 + runWind * 0.2 + runAQI * 0.25) * 100);
+
+  const cycTemp = 1 - Math.min(1, Math.abs(c.temp - 20) / 20);
+  const cycWind = c.wind_kph < 20 ? 1 : Math.max(0, 1 - (c.wind_kph - 20) / 30);
+  const cycRain = c.precip <= 0 ? 1 : 0.2;
+  const cycVis = Math.min(1, c.visibility_mi / 6);
+  const cycling = Math.round((cycTemp * 0.3 + cycWind * 0.3 + cycRain * 0.25 + cycVis * 0.15) * 100);
+
+  const starCloud = Math.max(0, 1 - c.cloud / 100);
+  const starMoon = Math.max(0, 1 - parseInt(c.moon_illum || 50) / 100);
+  const starVis = Math.min(1, c.visibility_mi / 8);
+  const starRain = c.precip <= 0 ? 1 : 0;
+  const stargazing = Math.round((starCloud * 0.4 + starMoon * 0.25 + starVis * 0.2 + starRain * 0.15) * 100);
+
+  const photoCloud = c.cloud > 20 && c.cloud < 80 ? 1 : 0.5;
+  const photoVis = Math.min(1, c.visibility_mi / 5);
+  const photoTemp = c.temp > 0 && c.temp < 40 ? 1 : 0.4;
+  const photoRain = c.precip > 0 && c.precip < 2 ? 0.9 : c.precip >= 2 ? 0.3 : 0.7;
+  const photography = Math.round((photoCloud * 0.35 + photoVis * 0.25 + photoTemp * 0.2 + photoRain * 0.2) * 100);
+
+  return { running, cycling, stargazing, photography };
+}
+
+function calcEnergyAndNature(c) {
+  const solar = Math.round(Math.min(100, (c.uv / 11) * (1 - c.cloud / 100 * 0.75) * 100));
+  let windP = 0;
+  if (c.wind_kph >= 10 && c.wind_kph <= 60) windP = Math.round(Math.exp(-Math.pow(c.wind_kph - 35, 2) / 400) * 100);
+  else if (c.wind_kph > 60) windP = 10;
+  
+  const polTemp = 1 - Math.min(1, Math.abs(c.temp - 25) / 20);
+  const polHum = c.humidity > 30 && c.humidity < 70 ? 1 : 0.4;
+  const polRain = c.precip <= 0 ? 1 : 0.3;
+  const pollenPct = Math.round((polTemp * 0.5 + polHum * 0.3 + polRain * 0.2) * 100);
+
+  const soilMoisture = Math.max(0, Math.min(100, Math.round(c.precip * 15 + c.humidity * 0.5 - c.temp * 0.4 + 10)));
+  const fireRisk = Math.max(0, Math.min(10, Math.round(Math.max(0, (c.temp - 15)/10) + Math.max(0, (100 - c.humidity)/33) + Math.max(0, c.wind_kph/25) + (c.precip > 0 ? -2 : 0))));
+
+  return { solar, windP, pollenPct, soilMoisture, fireRisk };
+}
 
 let selectedCity = window.CITIES[0] || {};
 let currentTab = 'forecast';
@@ -694,72 +751,178 @@ function renderChart(c) {
 }
 
 function renderExtra(c) {
+  if (currentTab === 'lifestyle') {
+    const sc = calcActivityScores(c);
+    const items = [
+      { name: 'Running', score: sc.running, icon: SVGS.run, col: 'var(--green)', d:'2' },
+      { name: 'Cycling', score: sc.cycling, icon: SVGS.bike, col: 'var(--accent)', d:'1' },
+      { name: 'Stargazing', score: sc.stargazing, icon: SVGS.star, col: 'var(--purple)', d:'0' },
+      { name: 'Photography', score: sc.photography, icon: SVGS.camera, col: 'var(--orange)', d:'3' }
+    ];
+    document.getElementById('extraSection').innerHTML = `
+      <div class="chart-card" style="margin-bottom: 20px;">
+        <div class="chart-header" style="margin-bottom:20px;"><div class="chart-title">Activity Score Index</div></div>
+        <div style="display:flex; justify-content:space-around; align-items:center;">
+          ${items.map(it => {
+            const arc = (it.score/100) * 188.5; // Circle circumference ~188.5 for r=30
+            return `
+            <div style="display:flex; flex-direction:column; align-items:center; position:relative; width:90px;">
+              <svg viewBox="0 0 80 80" style="width:70px; height:70px; transform:rotate(-90deg);">
+                <circle cx="40" cy="40" r="30" fill="none" stroke="var(--surface3)" stroke-width="4"></circle>
+                <circle cx="40" cy="40" r="30" fill="none" stroke="${it.col}" stroke-width="4" stroke-dasharray="${arc} 200" stroke-linecap="round"></circle>
+              </svg>
+              <div style="position:absolute; top:20px; left:0; width:100%; text-align:center; font-size:18px; color:${it.col};" class="svg-icon">
+                ${it.icon}
+              </div>
+              <div style="text-align:center; margin-top:8px;">
+                <div style="font-size:16px; font-weight:600; color:${it.col}">${it.score}</div>
+                <div style="font-size:10px; color:var(--text3); text-transform:uppercase; letter-spacing:0.5px">${it.name}</div>
+              </div>
+            </div>`;
+          }).join('')}
+        </div>
+      </div>
+    `;
+    return;
+  } else if (currentTab === 'env') {
+    const en = calcEnergyAndNature(c);
+    const fireCol = en.fireRisk>=6 ? 'var(--red)' : en.fireRisk>=4 ? 'var(--orange)' : 'var(--green)';
+    document.getElementById('extraSection').innerHTML = `
+      <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+        <!-- Energy Arc Gauges -->
+        <div class="chart-card">
+          <div class="chart-header"><div class="chart-title">Renewable Energy Yield</div></div>
+          <div style="display:flex; justify-content:space-around; align-items:center; padding:10px 0;">
+            <div style="text-align:center; position:relative;">
+              <svg viewBox="0 0 100 60" style="width:100px;">
+                <path d="M 10,50 A 40,40 0 0 1 90,50" fill="none" stroke="var(--surface3)" stroke-width="6" stroke-linecap="round"></path>
+                <path d="M 10,50 A 40,40 0 0 1 90,50" fill="none" stroke="var(--yellow)" stroke-width="6" stroke-linecap="round" stroke-dasharray="${(en.solar/100)*125} 125"></path>
+              </svg>
+              <div style="position:absolute; bottom:10px; left:0; width:100%; display:flex; flex-direction:column; align-items:center;">
+                <span class="svg-icon" style="color:var(--yellow); font-size:16px; margin-bottom:2px;">${SVGS.solar}</span>
+                <span style="font-size:18px; font-weight:600;">${en.solar}%</span>
+              </div>
+              <div style="font-size:10px; color:var(--text3); margin-top:5px; text-transform:uppercase;">Solar</div>
+            </div>
+            
+            <div style="text-align:center; position:relative;">
+              <svg viewBox="0 0 100 60" style="width:100px;">
+                <path d="M 10,50 A 40,40 0 0 1 90,50" fill="none" stroke="var(--surface3)" stroke-width="6" stroke-linecap="round"></path>
+                <path d="M 10,50 A 40,40 0 0 1 90,50" fill="none" stroke="var(--accent)" stroke-width="6" stroke-linecap="round" stroke-dasharray="${(en.windP/100)*125} 125"></path>
+              </svg>
+              <div style="position:absolute; bottom:10px; left:0; width:100%; display:flex; flex-direction:column; align-items:center;">
+                <span class="svg-icon" style="color:var(--accent); font-size:16px; margin-bottom:2px;">${SVGS.wind_turb}</span>
+                <span style="font-size:18px; font-weight:600;">${en.windP}%</span>
+              </div>
+              <div style="font-size:10px; color:var(--text3); margin-top:5px; text-transform:uppercase;">Wind</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Environment Wave / Liquid Gauges -->
+        <div class="chart-card">
+          <div class="chart-header"><div class="chart-title">Eco-Risk Metrics</div></div>
+          <div style="display:flex; justify-content:space-around; align-items:center; padding:10px 0;">
+            <div style="display:flex; flex-direction:column; align-items:center;">
+               <div style="position:relative; width:60px; height:60px; border-radius:50%; border:2px solid var(--orange); overflow:hidden; display:flex; align-items:center; justify-content:center; margin-bottom:10px;">
+                 <div style="position:absolute; bottom:0; width:100%; height:${en.pollenPct}%; background:var(--orange); opacity:0.3;"></div>
+                 <div style="position:relative; z-index:10; color:var(--orange); font-size:24px;" class="svg-icon">${SVGS.pollen}</div>
+               </div>
+               <div style="font-size:18px; font-weight:600; color:var(--text);">${en.pollenPct}%</div>
+               <div style="font-size:10px; color:var(--text3); text-transform:uppercase;">Pollen</div>
+            </div>
+
+            <div style="display:flex; flex-direction:column; align-items:center;">
+               <div style="position:relative; width:60px; height:60px; border-radius:50%; border:2px solid ${fireCol}; overflow:hidden; display:flex; align-items:center; justify-content:center; margin-bottom:10px;">
+                 <div style="position:absolute; bottom:0; width:100%; height:${en.fireRisk*10}%; background:${fireCol}; opacity:0.3;"></div>
+                 <div style="position:relative; z-index:10; color:${fireCol}; font-size:24px;" class="svg-icon">${SVGS.fire}</div>
+               </div>
+               <div style="font-size:18px; font-weight:600; color:var(--text);">${en.fireRisk}/10</div>
+               <div style="font-size:10px; color:var(--text3); text-transform:uppercase;">Fire Risk</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+    return;
+  }
+
   if (currentTab === 'airquality') {
-    // Air quality breakdown Radar Chart for this city
     const maxVals = { pm25: 50, pm10: 100, no2: 50, o3: 100, co: 1000, so2: 50 };
     const pols = ['pm25', 'pm10', 'no2', 'o3', 'co', 'so2'];
     const angles = pols.map((_, i) => (Math.PI * 2 * i) / pols.length - Math.PI/2);
     
-    let radarPoints = '';
     const cx = 100, cy = 100, r = 70;
+    let radarPoints = '';
+    let radarDots = '';
     
     pols.forEach((p, i) => {
       let val = (c[p] || 0) / maxVals[p];
-      val = Math.min(1, Math.max(0.1, val));
+      val = Math.min(1.1, Math.max(0.1, val));
       const px = cx + r * val * Math.cos(angles[i]);
       const py = cy + r * val * Math.sin(angles[i]);
       radarPoints += `${px},${py} `;
+      radarDots += `<circle cx="${px}" cy="${py}" r="3" fill="var(--accent)" />`;
     });
     
-    // Grid polygons
-    const grids = [0.33, 0.66, 1].map(scale => {
+    const grids = [0.25, 0.5, 0.75, 1].map(scale => {
       let pts = pols.map((_, i) => `${cx + r * scale * Math.cos(angles[i])},${cy + r * scale * Math.sin(angles[i])}`).join(' ');
-      return `<polygon points="${pts}" class="radar-grid" />`;
+      return `<polygon points="${pts}" fill="none" stroke="var(--border)" stroke-dasharray="2 4" stroke-width="1" />`;
     }).join('');
 
     const Labels = pols.map((p, i) => {
-      const lx = cx + (r+20) * Math.cos(angles[i]);
-      const ly = cy + (r+15) * Math.sin(angles[i]);
-      return `<text x="${lx}" y="${ly}" class="radar-label">${p.toUpperCase()} (${c[p]||0})</text>`;
+      const lx = cx + (r+22) * Math.cos(angles[i]);
+      const ly = cy + (r+18) * Math.sin(angles[i]);
+      return `<text x="${lx}" y="${ly}" class="radar-label" style="font-weight:600; fill:var(--text2); font-size:8px;">${p.toUpperCase()} (${c[p]||0})</text>`;
     }).join('');
 
-    const sorted = [...window.CITIES].sort((a,b) => b.pm25 - a.pm25).slice(0,10);
+    const sorted = [...window.CITIES].sort((a,b) => b.pm25 - a.pm25).slice(0,6);
 
     document.getElementById('extraSection').innerHTML = `
-      <div style="display:grid; grid-template-columns: 220px 1fr; gap: 16px;">
-        <div class="chart-card" style="display:flex; flex-direction:column; align-items:center; padding:12px;">
-          <div class="chart-header" style="align-self:stretch; margin-bottom:0;"><div class="chart-title">${c.city} Pollutants</div></div>
-          <svg viewBox="0 0 200 200" style="width:100%; max-width:180px">
+      <div style="display:grid; grid-template-columns: 280px 1fr; gap: 16px;">
+        <div class="chart-card" style="display:flex; flex-direction:column; align-items:center;">
+          <div class="chart-header" style="align-self:stretch; margin-bottom:0;"><div class="chart-title">Pollutant Breakdown</div></div>
+          <svg viewBox="0 0 200 200" style="width:100%; max-width:240px; filter: drop-shadow(0 0 10px rgba(91,196,250,0.1));">
             ${grids}
             ${Labels}
-            <polygon points="${radarPoints}" class="radar-chart" />
+            <polygon points="${radarPoints}" fill="rgba(91,196,250,0.15)" stroke="var(--accent)" stroke-width="2" stroke-linejoin="round" />
+            ${radarDots}
           </svg>
-          <div style="margin-top:5px;font-size:11px;color:var(--text3);text-align:center;">GB-DEFRA Index: ${c.gb_defra}/10</div>
-        </div>
-        <div class="chart-card">
-          <div class="chart-header" style="margin-bottom:12px;">
-            <div class="chart-title">Global Air Quality Comparison</div>
-            <span style="font-size:10px;color:var(--text3)">PM2.5 μg/m³ worst</span>
+          <div style="display:flex; justify-content:space-between; width:100%; margin-top:10px; font-size:11px; padding: 10px; background:var(--surface2); border-radius:8px;">
+            <div style="display:flex; flex-direction:column; align-items:center;"><span style="color:var(--text3); font-size:9px; text-transform:uppercase;">Overall AQI</span><span style="font-size:14px; font-weight:600; color:${AQI_COLORS[c.aqi]||'var(--green)'}">${AQI_LABELS[c.aqi]||'Good'}</span></div>
+            <div style="display:flex; flex-direction:column; align-items:center;"><span style="color:var(--text3); font-size:9px; text-transform:uppercase;">GB-DEFRA</span><span style="font-size:14px; font-weight:600;">${c.gb_defra}/10</span></div>
           </div>
-          <table class="aq-table">
-            <thead><tr><th>City</th><th>PM2.5</th><th>PM10</th><th>NO₂</th><th>O₃</th><th>CO</th><th>AQI</th></tr></thead>
-            <tbody>
-              ${sorted.map(city => `
-                <tr>
-                  <td style="font-weight:500">${city.city}<span style="color:var(--text3);font-size:9px;margin-left:4px">${city.country}</span></td>
-                  <td style="font-variant-numeric:tabular-nums">${city.pm25.toFixed(1)}</td>
-                  <td style="font-variant-numeric:tabular-nums">${city.pm10.toFixed(1)}</td>
-                  <td style="font-variant-numeric:tabular-nums">${city.no2.toFixed(1)}</td>
-                  <td style="font-variant-numeric:tabular-nums">${city.o3.toFixed(0)}</td>
-                  <td style="font-variant-numeric:tabular-nums">${(city.co/1000).toFixed(1)}k</td>
-                  <td><span class="aq-pill" style="background:${AQI_COLORS[city.aqi]||'#4ade80'}22;color:${AQI_COLORS[city.aqi]||'#4ade80'}">${AQI_LABELS[city.aqi]||'Good'}</span></td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
+        </div>
+        
+        <div class="chart-card">
+          <div class="chart-header" style="margin-bottom:16px;">
+            <div class="chart-title">Global Worst Watchlist</div>
+            <span style="font-size:10px;color:var(--text3)">Ranked by PM2.5</span>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:8px;">
+            ${sorted.map((city, idx) => {
+              const bgCol = AQI_COLORS[city.aqi] || '#f87171';
+              const pPct = Math.min(100, (city.pm25 / 150) * 100);
+              return `
+                <div style="display:flex; align-items:center; gap:12px; padding:10px 12px; background:var(--surface2); border-radius:10px; position:relative; overflow:hidden;">
+                  <div style="position:absolute; left:0; top:0; bottom:0; width:${pPct}%; background:${bgCol}; opacity:0.1; z-index:0;"></div>
+                  <div style="width:20px; font-size:11px; font-weight:600; color:var(--text3); z-index:1;">#${idx+1}</div>
+                  <div style="flex:1; z-index:1;">
+                    <div style="font-size:12px; font-weight:600;">${city.city}</div>
+                    <div style="font-size:9px; color:var(--text3);">${city.country}</div>
+                  </div>
+                  <div style="display:flex; gap:16px; text-align:right; z-index:1;">
+                    <div><span style="font-size:8px; color:var(--text3); display:block;">PM2.5</span><span style="font-size:13px; font-weight:500;">${city.pm25.toFixed(1)}</span></div>
+                    <div><span style="font-size:8px; color:var(--text3); display:block;">AQI</span><span style="font-size:13px; font-weight:600; color:${bgCol}">${AQI_LABELS[city.aqi]||'Hazardous'}</span></div>
+                  </div>
+                </div>
+              `;
+            }).join('')}
+          </div>
         </div>
       </div>
     `;
+
   } else if (currentView === 'global') {
     // 1. Global Map (original)
     const dotsSvg = window.CITIES.slice(0, 300).map(city => {
